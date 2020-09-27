@@ -16,9 +16,16 @@ class Chat(ABC):
         self._members_by_id = {}
         self._messages = []
 
-    @abstractmethod
     def send_message(self, message):
-        pass
+        self._messages.append(message)
+
+    def get_messages(self):
+        messages = [message for message in self._messages]
+        return messages
+    
+    def get_unread_messages(self):
+        unread_messages = [message for message in self._messages if not message.was_read()]
+        return unread_messages
 
     def add_member(self, user):
         self._members_by_id[user.id] = user
@@ -48,12 +55,7 @@ class GroupChat(Chat):
     def __init__(self, chat_id, chat_name, chat_type):
         super().__init__(chat_id, chat_name, chat_type)
 
-    def send_message(self, message):
-        for member in self._members_by_id:
-            self._messages.append(message)
-            self._members_by_id[member].receive_message(
-                message.from_user.user_id, message.text
-            )
+    
 
 
 class PrivateChat(Chat):
@@ -62,9 +64,4 @@ class PrivateChat(Chat):
         self._members_by_id[first_user.user_id] = first_user
         self._members_by_id[second_user.user_id] = second_user
 
-    def send_message(self, message):
-        self._messages.append(message)
-        self._members_by_id[message.to_user.user_id].receive_message(
-            message.from_user.user_id, message.text
-        )
 

@@ -38,10 +38,11 @@ class Message:
 
 
 class GroupMessage:
-    def __init__(self, message_id, from_user, text):
+    def __init__(self, message_id, from_user, recipients, text):
         self._message_id = message_id
         self._from_user = from_user
         self._text = text
+        self._recipients = []
         self._read_by = []
 
     @property
@@ -55,6 +56,10 @@ class GroupMessage:
     @property
     def message_id(self):
         return self._message_id
+
+    @property
+    def recipients(self):
+        return self._recipients
     
     def mark_as_read_by(self, user):
         self._read_by.append(user)

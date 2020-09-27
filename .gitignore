@@ -1,0 +1,6 @@
+.vscode
+__pycache__
+blackjack/
+call_center/
+ice_cream_shop/
+uno/

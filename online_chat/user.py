@@ -74,7 +74,9 @@ class User:
             invite.group_chat.add_member(self)
             self._group_chats_by_id[invite.group_chat.chat_id] = invite.group_chat
         elif invite.chat.chat_type == ChatType.PRIVATE_CHAT:
-            self._private_chats_by_friend_id[invite.private_chat.chat_id] = invite.private_chat
+            self._private_chats_by_friend_id[
+                invite.private_chat.chat_id
+            ] = invite.private_chat
 
     def leave_chat(self, chat_id):
         chat = None
@@ -90,16 +92,30 @@ class User:
         group_chat = self._group_chats_by_id.get(chat_id)
         if not group_chat:
             raise ValueError("Group chat not found")
-        message = GroupMessage("random_message_id", self, text)
+        message = GroupMessage("random_message_id", self, group_chat.members, text)
         group_chat.send_message(message)
 
     def message_user(self, user_id, text):
         private_chat = self._private_chats_by_friend_id.get(user_id)
-        friend = self._friends_by_id.get(user_id)
         if not private_chat:
             raise ValueError("Private chat not found")
-        if not user:
-            raise ValueError("Friend not found")
-        message = Message("random_message_id", self, friend, text)
+        message = Message("random_message_id", self, private_chat.second_user, text)
         private_chat.send_message(message)
 
+    def read_unread_private_messages(self, user_id):
+        private_chat = self._private_chats_by_friend_id.get(user_id)
+        if not private_chat:
+            raise ValueError("Private chat not found")
+        messages = private_chat.get_unread_messages()
+        for message in messages:
+            print(message.text)
+            message.mark_as_read()
+
+    def read_unread_group_messages(self, chat_id):
+        group_chat = self._group_chats_by_id.get(chat_id)
+        if not group_chat:
+            raise ValueError("Group chat not found")
+        messages = group_chat.get_unread_messages()
+        for message in messages:
+            print(message.text)
+            message.mark_as_read_by(self)

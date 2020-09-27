@@ -35,6 +35,10 @@ class Chat(ABC):
             self._members_by_id.pop(user_id)
 
     @property
+    def members(self):
+        return self._members_by_id.values()
+
+    @property
     def chat_id(self):
         return self._chat_id
 

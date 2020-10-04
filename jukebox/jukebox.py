@@ -41,7 +41,7 @@ class JukeBox:
         return self._records[:]
 
     def take_money(self, money):
-        self._money_needed_to_play_song -= money
+        self._money_needed_to_play_song += money
 
     def play(self, record_title, track_number):
         if self.can_play_song() > 0:
@@ -58,12 +58,18 @@ class JukeBox:
             self._currently_playing = record
         else:
             self._song_queue.append(track)
+        self._money_needed_to_play_song -= self._cost_per_song
     
     def can_play_song(self):
         return self._money_needed_to_play_song > 0
 
     def pause(self):
-        pass
+        if self._currently_playing:
+            title = self._currently_playing.record_title()
+            self._records[title].pause()
 
     def end_song(self):
-        self._currently_playing = None
+        if self._currently_playing:
+            title = self._currently_playing.record_title()
+            self._records[title].end()
+            self._currently_playing = None

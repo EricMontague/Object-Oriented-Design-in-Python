@@ -6,11 +6,11 @@ class ISubject(ABC):
         self._observers = {}
 
     @abstractmethod
-    def notify_observers(self):
+    def notify_observers(self, data):
         pass
 
     @abstractmethod
-    def add_observer(self, new_observer):
+    def add_observer(self, observer):
         pass
 
     @abstractmethod

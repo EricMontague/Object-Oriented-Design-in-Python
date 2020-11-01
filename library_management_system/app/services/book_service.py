@@ -1,15 +1,16 @@
 from app.services.fine_service import fine_service
 from app.services.reservation_service import reservation_service
-from app.views.user_interface import user_interface
+from app.views import ReservationView, PaymentsView
 from app.common.subject import ISubject
 from app.enums import CheckoutResponse
 from app.models import Checkout
 from app.models import Notification
 
 
-class BookService(ISubject):
+class _BookService(ISubject):
 
-    MAX_CHECKOUT_LIMIT = 5
+    _MAX_CHECKOUT_LIMIT = 5
+
     # _instance = None
 
     # def __new__(cls):
@@ -17,9 +18,18 @@ class BookService(ISubject):
     #         cls._instance = object.__new__(cls)
     #     return cls._instance
 
-    def __init__(self, books):
-        self._books_by_id = books
+    def __init__(self):
+        self._books_by_id = {}
         self._checked_out_books_by_user_id = {}
+
+    def add_book(self, book):
+        pass
+
+    def update_book(self, book_id, payload):
+        pass
+
+    def remove_book(self, book_id):
+        pass
 
     def notify_observers(self, book_id):
         reservations = reservation_service.get_reservations_by_book_id(book_id)
@@ -29,12 +39,19 @@ class BookService(ISubject):
             reservation.member.receive_notification(notificationn)
 
     def add_observer(self, checkout):
-        self._checked_out_books_by_user_id[checkout.member.user_id] = checkout
+        user_id = checkout.member.user_id
+        if user_id not in self._checked_out_books_by_user_id:
+            self._checked_out_books_by_user_id[user_id] = []
+        self._checked_out_books_by_user_id[user_id].append(checkout)
 
     def remove_observer(self, user_id):
         if not self.has_taken_out_book(user_id):
             raise ValueError("Observer not found")
-        self._checked_out_books_by_user_id.pop(user_id)
+        checkouts = self._checked_out_books_by_user_id[user_id]
+        for index in range(len(checkouts)):
+            if checkouts[index].book == book:
+                del checkouts[index]
+                break
 
     def get_book_rack_number(self, book_id):
         if not self.has_book_in_library(book_id):
@@ -46,9 +63,10 @@ class BookService(ISubject):
             raise ValueError("Book not found")
         if member.has_overdue_book():
             amount = fine_service.get_amount_due(member.user_id)
-            if not user_interface.wants_to_pay_fine(amount, member.name):
+            if not PaymentsView.wants_to_pay_fine(amount):
                 return CheckoutResponse.USER_REFUSED_TO_PAY_FINE
-            fine_service.charge(member, amount)
+            book = self._books_by_id[book_id]
+            fine_service.charge(amount, book, member)
             return CheckoutResponse.USER_PAID_FINE
 
         if member.num_books_checked_out() == self.MAX_CHECKOUT_LIMIT:
@@ -60,9 +78,9 @@ class BookService(ISubject):
         book = self._books_by_id[book_id]
         # If book not available, ask user if they want to reservere copy
         if not book.is_avaiable():
-            if not user_interface.wants_to_reserve_book(book.title):
+            if not ReservationView.wants_to_reserve_book(book.title):
                 return CheckoutResponse.USER_REFUSED_TO_RESERVE_BOOK
-            reservation_service.reserve_book(book_id, member)
+            reservation_service.reserve_book(book, member)
             return CheckoutResponse.USER_RESERVED_BOOK
         # Need to look into barcode vs book id here
         # what happens if the member.checkout_book() method raises an error?
@@ -83,16 +101,19 @@ class BookService(ISubject):
         if not self.has_taken_out_book(member.user_id):
             raise ValueError("User has not taken out this book")
         book = self._books_by_id[book_id]
-        checkout = self._checked_out_books_by_user_id[member.user_id]
-        if checkout.book_copy.is_overdue():
-            amount = fine_service.get_amount_due(member.user_id)
-            if user_interface.wants_to_pay_fine(amount):
-                fine_service.charge(member, amount)
+        checkouts = self._checked_out_books_by_user_id[member.user_id]
+        # Need to figure out the difference between barcode and book_id
+        for checkout in checkouts:
+            if checkout.book_copy.book_id == book_id:
+                if checkout.book_copy.is_overdue():
+                    amount = fine_service.get_amount_due(member.user_id)
+                    if PaymentsView.wants_to_pay_fine(amount):
+                        fine_service.charge(amount, book, member)
         book.return_book(checkout.book_copy)
         member.return_book(checkout.book_copy.barcode)
         self.remove_observer(member.user_id)
         # notify others that have reserved this book that it is available
-        self.notify_observers()
+        self.notify_observers(book_id)
         return True
 
     def has_book_in_library(self, book_id):
@@ -104,8 +125,29 @@ class BookService(ISubject):
     def book_taken_out_by(self, barcode):
         members = []
         for user_id in self._checked_out_books_by_user_id:
-            checkout = self._checked_out_books_by_user_id[user_id]
-            if checkout.book_copy.barcode == barcode:
-                members.append(checkout.member)
+            checkouts = self._checked_out_books_by_user_id[user_id]
+            for checkout in checkouts:
+                if checkout.book_copy.barcode == barcode:
+                    members.append(checkout.member)
         return members
 
+    def get_max_checkout_limit(self):
+        return self._MAX_CHECKOUT_LIMIT
+
+    def check_for_overdue_books(self):
+        """A process that is run once at the end of every day
+        to check for overdue books and create/increment fines
+        if necessary.
+        """
+        for user_id in self._checked_out_books_by_user_id:
+            checkouts = self._checked_out_books_by_user_id[user_id]
+            for checkout in checkouts:
+                if fine_service.owes_money_for_book(
+                    checkout.book_copy, checkout.member
+                ):
+                    fine_service.increment_fine(checkout.book_copy, checkout.member)
+                elif checkout.book_copy.is_overdue():
+                    fine_service.create_fine(checkout.book_copy, checkout.member)
+
+
+book_service = _BookService()

@@ -1,9 +1,9 @@
 from app.models.member import Member
-from app.service import book_service
+from app.services import book_service
 from app.enums import Permissions
 
-class Librarian(Member):
 
+class Librarian(Member):
     def __init__(self, user_id, name, password_hash, member_card):
         super().__init__(user_id, name, password_hash, member_card)
         for permission in Permissions:

@@ -1,4 +1,4 @@
-from app.enums import SearchCriteria
+from app.enums.search_criteria import SearchCriteria
 
 
 class _SearchService:

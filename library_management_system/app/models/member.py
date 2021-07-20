@@ -1,6 +1,6 @@
-from app.services import search_service
-from app.common import IObserver
-from app.enums import Permissions
+from app.services.search_service import search_service
+from app.common.observer import IObserver
+from app.enums.permissions import Permissions
 
 
 class Member(IObserver):

@@ -1,4 +1,4 @@
-from app.models import Fine
+from app.models.fine import Fine
 from uuid import uuid4
 
 

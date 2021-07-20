@@ -1,5 +1,5 @@
 from uuid import uuid4
-from app.models import Reservation
+from app.models.reservation import Reservation
 
 
 class _ReservationService:

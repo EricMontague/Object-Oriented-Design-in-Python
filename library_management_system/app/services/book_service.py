@@ -1,10 +1,11 @@
 from app.services.fine_service import fine_service
 from app.services.reservation_service import reservation_service
-from app.views import ReservationView, PaymentsView
+from app.views.reservation import ReservationView
+from app.views.payments import PaymentsView
 from app.common.subject import ISubject
-from app.enums import CheckoutResponse
-from app.models import Checkout
-from app.models import Notification
+from app.enums.checkout_response import CheckoutResponse
+from app.models.checkout import Checkout
+from app.models.notification import Notification
 
 
 class _BookService(ISubject):
@@ -69,9 +70,9 @@ class _BookService(ISubject):
             fine_service.charge(amount, book, member)
             return CheckoutResponse.USER_PAID_FINE
 
-        if member.num_books_checked_out() == self.MAX_CHECKOUT_LIMIT:
+        if member.num_books_checked_out() == self._MAX_CHECKOUT_LIMIT:
             raise ValueError(
-                f"User has reached the limit({self.MAX_CHECKOUT_LIMIT})"
+                f"User has reached the limit({self._MAX_CHECKOUT_LIMIT})"
                 + "for the number books they can checkout at once"
             )
 

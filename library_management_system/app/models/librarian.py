@@ -1,6 +1,6 @@
 from app.models.member import Member
-from app.services import book_service
-from app.enums import Permissions
+from app.services.book_service import book_service
+from app.enums.permissions import Permissions
 
 
 class Librarian(Member):
